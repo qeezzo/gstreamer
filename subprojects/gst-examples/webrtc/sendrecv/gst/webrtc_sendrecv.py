@@ -25,11 +25,11 @@ gi.require_version('GstSdp', '1.0')
 from gi.repository import GstSdp  # NOQA
 
 # Ensure that gst-python is installed
-try:
-    from gi.overrides import Gst as _
-except ImportError:
-    print('gstreamer-python binding overrides aren\'t available, please install them')
-    raise
+# try:
+#     from gi.overrides import Gst as _
+# except ImportError:
+#     print('gstreamer-python binding overrides aren\'t available, please install them')
+#     raise
 
 # These properties all mirror the ones in webrtc-sendrecv.c, see there for explanations
 WEBRTCBIN = 'webrtcbin name=sendrecv latency=0 \
@@ -135,6 +135,8 @@ class WebRTCClient:
         await self.conn.send(msg)
 
     async def connect(self):
+        # ssl_context = ssl._create_unverified_context()
+        # self.conn = await websockets.connect(self.server, ssl=ssl_context)
         self.conn = await websockets.connect(self.server)
         if self.our_id is None:
             self.id_ = str(random.randrange(10, 10000))
@@ -181,7 +183,7 @@ class WebRTCClient:
     def on_offer_created(self, promise, _, __):
         assert promise.wait() == Gst.PromiseResult.REPLIED
         reply = promise.get_reply()
-        offer = reply['offer']
+        offer = reply.get_value('offer')
         promise = Gst.Promise.new()
         print_status('Offer created, setting local description')
         self.webrtc.emit('set-local-description', offer, promise)
@@ -261,7 +263,7 @@ class WebRTCClient:
     def on_answer_created(self, promise, _, __):
         assert promise.wait() == Gst.PromiseResult.REPLIED
         reply = promise.get_reply()
-        answer = reply['answer']
+        answer = reply.get_value('answer')
         promise = Gst.Promise.new()
         self.webrtc.emit('set-local-description', answer, promise)
         promise.interrupt()  # we don't care about the result, discard it
